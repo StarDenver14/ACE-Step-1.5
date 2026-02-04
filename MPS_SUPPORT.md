@@ -1,8 +1,19 @@
-# MPS Support Review (macOS)
+# MPS Support (macOS)
 
-Date: 2026-02-04
+Last updated: 2026-02-04
 
 This document captures the recommended changes to improve MPS support on macOS. No code changes are applied yet.
+
+## Scope and goals
+
+- Scope: inference only (training remains CUDA-focused).
+- Goal: allow `auto` device selection to pick MPS, and allow explicit MPS selection in CLI/UI.
+- Goal: remove CUDA hard-codes that crash on MPS/CPU.
+
+## Device selection rules
+
+- `auto` should prefer CUDA if available, else MPS if available, else CPU.
+- `mps` should be an explicit option in CLI and Gradio UI.
 
 ## High-priority fixes (crash/incorrect behavior)
 
@@ -32,10 +43,16 @@ This document captures the recommended changes to improve MPS support on macOS. 
 
 ## Lower priority / informational
 
-- `acestep/gpu_config.py` is CUDA-only, so MPS machines are treated as “no GPU.”
+- `acestep/gpu_config.py` is CUDA-only, so MPS machines are treated as "no GPU."
   - Impact: batch size/offload defaults may be conservative on MPS.
   - File: `acestep/gpu_config.py`
 
 - Training code uses CUDA-specific autocast.
   - Impact: training on MPS likely unsupported, but inference is the focus.
   - File: `acestep/training/trainer.py`
+
+## Acceptance criteria
+
+- `--device mps` works end-to-end on macOS with Apple Silicon.
+- `--device auto` selects MPS on macOS when CUDA is unavailable.
+- No CUDA-only code paths are hit during MPS inference.

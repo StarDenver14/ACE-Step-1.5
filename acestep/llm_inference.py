@@ -324,7 +324,7 @@ class LLMHandler:
             checkpoint_dir: Checkpoint directory path
             lm_model_path: LM model path (relative to checkpoint_dir)
             backend: Backend type ("vllm" or "pt")
-            device: Device type ("auto", "cuda", or "cpu")
+            device: Device type ("auto", "cuda", "mps", or "cpu")
             offload_to_cpu: Whether to offload to CPU
             dtype: Data type (if None, auto-detect based on device)
         
@@ -333,7 +333,14 @@ class LLMHandler:
         """
         try:
             if device == "auto":
-                device = "cuda" if torch.cuda.is_available() else "cpu"
+                if hasattr(torch, "xpu") and torch.xpu.is_available():
+                    device = "xpu"
+                elif torch.cuda.is_available():
+                    device = "cuda"
+                elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                    device = "mps"
+                else:
+                    device = "cpu"
 
             self.device = device
             self.offload_to_cpu = offload_to_cpu
@@ -378,6 +385,9 @@ class LLMHandler:
             logger.info(f"Constrained processor initialized in {time.time() - processor_start:.2f} seconds")
             
             # Initialize based on user-selected backend
+            if backend == "vllm" and device not in ["cuda"]:
+                logger.warning(f"vllm backend requires CUDA; falling back to PyTorch (device: {device})")
+                backend = "pt"
             if backend == "vllm":
                 # Try to initialize with vllm
                 status_msg = self._initialize_5hz_lm_vllm(full_lm_model_path)
@@ -729,7 +739,7 @@ class LLMHandler:
         generated_ids = generated_ids[input_length:]
         
         # Move to CPU for decoding
-        if generated_ids.is_cuda:
+        if generated_ids.device.type != "cpu":
             generated_ids = generated_ids.cpu()
         
         output_text = self.llm_tokenizer.decode(generated_ids, skip_special_tokens=False)

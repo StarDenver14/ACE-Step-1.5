@@ -96,7 +96,7 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
                 # Set device value from init_params if pre-initialized
                 device_value = init_params.get('device', 'auto') if service_pre_initialized else 'auto'
                 device = gr.Dropdown(
-                    choices=["auto", "cuda", "cpu"],
+                    choices=["auto", "cuda", "mps", "cpu"],
                     value=device_value,
                     label=t("service.device_label"),
                     info=t("service.device_info")
@@ -116,7 +116,8 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
                     info=t("service.lm_model_path_info")
                 )
                 # Set backend value from init_params if pre-initialized
-                backend_value = init_params.get('backend', 'vllm') if service_pre_initialized else 'vllm'
+                default_backend = "vllm" if gpu_config.gpu_memory_gb > 0 else "pt"
+                backend_value = init_params.get('backend', default_backend) if service_pre_initialized else default_backend
                 backend_dropdown = gr.Dropdown(
                     choices=["vllm", "pt"],
                     value=backend_value,
@@ -808,4 +809,3 @@ def create_generation_section(dit_handler, llm_handler, init_params=None, langua
         "max_duration": max_duration,
         "max_batch_size": max_batch_size,
     }
-

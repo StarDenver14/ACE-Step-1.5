@@ -129,7 +129,7 @@ def main():
     parser.add_argument("--init_service", type=lambda x: x.lower() in ['true', '1', 'yes'], default=False, help="Initialize service on startup (default: False)")
     parser.add_argument("--checkpoint", type=str, default=None, help="Checkpoint file path (optional, for display purposes)")
     parser.add_argument("--config_path", type=str, default=None, help="Main model path (e.g., 'acestep-v15-turbo')")
-    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"], help="Processing device (default: auto)")
+    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "mps", "cpu"], help="Processing device (default: auto)")
     parser.add_argument("--init_llm", type=lambda x: x.lower() in ['true', '1', 'yes'], default=None, help="Initialize 5Hz LM (default: auto based on GPU memory)")
     parser.add_argument("--lm_model_path", type=str, default=None, help="5Hz LM model path (e.g., 'acestep-5Hz-lm-0.6B')")
     parser.add_argument("--backend", type=str, default="vllm", choices=["vllm", "pt"], help="5Hz LM backend (default: vllm)")
@@ -180,6 +180,15 @@ def main():
         print(f"  DiT model: {args.config_path}")
         print(f"  LM model: {args.lm_model_path}")
         print(f"  Backend: {args.backend}")
+
+    # Default backend to PyTorch on non-CUDA systems unless explicitly set
+    backend_explicit = (
+        "--backend" in sys.argv
+        or os.environ.get("ACESTEP_LM_BACKEND") is not None
+        or os.environ.get("SERVICE_MODE_BACKEND") is not None
+    )
+    if not backend_explicit and get_gpu_memory_gb() <= 0:
+        args.backend = "pt"
     
     try:
         init_params = None

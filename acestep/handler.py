@@ -531,7 +531,7 @@ class AceStepHandler:
         """Check if tensor is on the target device (handles cuda vs cuda:0 comparison)."""
         if tensor is None:
             return True
-        target_type = "cpu" if target_device == "cpu" else "cuda"
+        target_type = torch.device(target_device).type if isinstance(target_device, str) else target_device.type
         return tensor.device.type == target_type
     
     def _ensure_silence_latent_on_device(self):

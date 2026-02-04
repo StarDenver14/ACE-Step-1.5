@@ -56,14 +56,14 @@ The Gradio interface consists of several main sections:
 |---------|-------------|
 | **Checkpoint File** | Select a trained model checkpoint (if available) |
 | **Main Model Path** | Choose the DiT model configuration (e.g., `acestep-v15-turbo`, `acestep-v15-turbo-shift3`) |
-| **Device** | Processing device: `auto` (recommended), `cuda`, or `cpu` |
+| **Device** | Processing device: `auto` (recommended), `cuda`, `mps`, or `cpu` |
 
 ### 5Hz LM Configuration
 
 | Setting | Description |
 |---------|-------------|
 | **5Hz LM Model Path** | Select the language model (e.g., `acestep-5Hz-lm-0.6B`, `acestep-5Hz-lm-1.7B`) |
-| **5Hz LM Backend** | `vllm` (faster, recommended) or `pt` (PyTorch, more compatible) |
+| **5Hz LM Backend** | `vllm` (faster, recommended) or `pt` (PyTorch, more compatible). Use `pt` on MPS. |
 | **Initialize 5Hz LM** | Check to load the LM during initialization (required for thinking mode) |
 
 ### Performance Options

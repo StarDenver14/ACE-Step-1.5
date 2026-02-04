@@ -74,6 +74,8 @@ Star ACE-Step on GitHub and be instantly notified of new releases
 ## 📦 Installation
 
 > **Requirements:** Python 3.11, CUDA GPU recommended (works on CPU/MPS but slower)
+>
+> **Apple Silicon (MPS):** use `--device mps` and set the 5Hz LM backend to `pt` (PyTorch). The `vllm` backend is CUDA-only.
 
 ### 1. Install uv (Package Manager)
 

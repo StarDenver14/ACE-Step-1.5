@@ -46,6 +46,12 @@ llm_handler.initialize(
     device="cuda"
 )
 
+# Apple Silicon (MPS) example:
+# - Set device to "mps"
+# - Use PyTorch backend (vllm is CUDA-only)
+# dit_handler.initialize_service(..., device="mps")
+# llm_handler.initialize(..., backend="pt", device="mps")
+
 # Configure generation parameters
 params = GenerationParams(
     caption="upbeat electronic dance music with heavy bass",

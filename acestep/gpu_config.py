@@ -18,6 +18,7 @@ from loguru import logger
 
 # Environment variable for debugging/testing different GPU memory configurations
 DEBUG_MAX_CUDA_VRAM_ENV = "MAX_CUDA_VRAM"
+DEBUG_MAX_MPS_VRAM_ENV = "MAX_MPS_VRAM"
 
 
 @dataclass
@@ -120,7 +121,7 @@ def get_gpu_memory_gb() -> float:
         
         This allows testing different GPU tier configurations on high-end hardware.
     """
-    # Check for debug override first
+    # Check for debug override first (CUDA or MPS)
     debug_vram = os.environ.get(DEBUG_MAX_CUDA_VRAM_ENV)
     if debug_vram is not None:
         try:
@@ -129,6 +130,15 @@ def get_gpu_memory_gb() -> float:
             return simulated_gb
         except ValueError:
             logger.warning(f"Invalid {DEBUG_MAX_CUDA_VRAM_ENV} value: {debug_vram}, ignoring")
+
+    debug_mps_vram = os.environ.get(DEBUG_MAX_MPS_VRAM_ENV)
+    if debug_mps_vram is not None:
+        try:
+            simulated_gb = float(debug_mps_vram)
+            logger.warning(f"⚠️ DEBUG MODE: Simulating MPS memory as {simulated_gb:.1f}GB (set via {DEBUG_MAX_MPS_VRAM_ENV} environment variable)")
+            return simulated_gb
+        except ValueError:
+            logger.warning(f"Invalid {DEBUG_MAX_MPS_VRAM_ENV} value: {debug_mps_vram}, ignoring")
     
     try:
         import torch
@@ -137,6 +147,25 @@ def get_gpu_memory_gb() -> float:
             total_memory = torch.cuda.get_device_properties(0).total_memory
             memory_gb = total_memory / (1024**3)  # Convert bytes to GB
             return memory_gb
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            # MPS uses unified memory; estimate from system RAM (conservative clamp)
+            total_bytes = 0
+            try:
+                if hasattr(os, "sysconf"):
+                    page_size = os.sysconf("SC_PAGE_SIZE")
+                    pages = os.sysconf("SC_PHYS_PAGES")
+                    total_bytes = page_size * pages
+            except Exception:
+                total_bytes = 0
+
+            if total_bytes <= 0:
+                # Fallback to a conservative default if system memory can't be read
+                return 8.0
+
+            total_gb = total_bytes / (1024**3)
+            # Use 40% of system RAM, clamped to 4-16GB to stay conservative
+            estimated_gb = max(4.0, min(16.0, total_gb * 0.4))
+            return estimated_gb
         else:
             return 0
     except Exception as e:
